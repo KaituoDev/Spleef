@@ -1,0 +1,6 @@
+api-version: 1.13
+name: Spleef
+main: tech.yfshadaow.Spleef
+version: 1.0
+author: YFshadaow
+depend: [GameUtils,WorldEdit]
