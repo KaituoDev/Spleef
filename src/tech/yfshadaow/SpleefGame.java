@@ -39,14 +39,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.*;
 
-public class Game extends BukkitRunnable implements Listener {
+public class SpleefGame extends BukkitRunnable implements Listener {
     World world;
     Spleef plugin;
     List<Player> players;
     List<Player> playersAlive;
     List<Integer> taskIds;
 
-    public Game(Spleef plugin) {
+    public SpleefGame(Spleef plugin) {
         this.plugin = plugin;
         this.players = plugin.players;
         this.playersAlive = new ArrayList<>();

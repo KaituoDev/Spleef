@@ -30,7 +30,7 @@ public class Spleef extends JavaPlugin implements Listener {
             return;
         }
         if (pie.getClickedBlock().getLocation().equals(new Location(world,1000,7,4))) {
-            Game game = new Game(this);
+            SpleefGame game = new SpleefGame(this);
             game.runTask(this);
         }
     }
