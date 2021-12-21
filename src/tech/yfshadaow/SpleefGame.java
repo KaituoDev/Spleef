@@ -18,7 +18,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
-import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -152,7 +151,7 @@ public class SpleefGame extends BukkitRunnable implements Listener {
             },80);
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 for (Player p: players) {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(),"replaceitem entity " + p.getName() + " hotbar.0 iron_pickaxe{Unbreakable:1,Enchantments:[{id:efficiency,lvl:10}],HideFlags:13,CanDestroy:[white_concrete,blue_ice,brown_concrete,green_concrete,light_blue_stained_glass_pane,sea_lantern,cobblestone_slab,polished_andesite,stone_brick_wall,stone_brick_stairs,stone_brick_slab]} 1");
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(),"item replace entity " + p.getName() + " hotbar.0 with iron_pickaxe{Unbreakable:1,Enchantments:[{id:efficiency,lvl:10}],HideFlags:13,CanDestroy:[white_concrete,blue_ice,brown_concrete,green_concrete,light_blue_stained_glass_pane,sea_lantern,cobblestone_slab,polished_andesite,stone_brick_wall,stone_brick_stairs,stone_brick_slab]} 1");
                     p.sendTitle("§e游戏开始！",null,2,16,2);
                     p.playSound(p.getLocation(),Sound.BLOCK_NOTE_BLOCK_HARP,1f,2f);
                     p.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE,999999,49,false,false));
@@ -237,7 +236,7 @@ public class SpleefGame extends BukkitRunnable implements Listener {
         fw.detonate();
     }
     public long getTime(World world) {
-        return ((CraftWorld)world).getHandle().worldData.getTime();
+        return (world.getGameTime());
     }
     private void pasteSchematic(String name, double x, double y ,double z, boolean ignoreAir) {
         File file = new File("plugins/WorldEdit/schematics/" + name + ".schem");
