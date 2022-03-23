@@ -49,7 +49,7 @@ public class SpleefGame extends Game implements Listener {
         players = Spleef.players;
         playersAlive = new ArrayList<>();
         initGame(plugin, "Spleef", "§e掘一死战", 5, new Location(world, 1000, 7, 4), BlockFace.NORTH, new Location(world, 996, 7, 0),
-                BlockFace.EAST, new Location(world, 1000, 6, 0), new BoundingBox(960, 55, -40, 1040, 132, 40));
+                BlockFace.EAST, new Location(world, 1000, 6, 0), new BoundingBox(700, -64, -300, 1300, 320, 300));
     }
 
     public static SpleefGame getInstance() {
