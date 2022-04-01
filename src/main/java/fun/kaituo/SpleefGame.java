@@ -1,4 +1,4 @@
-package tech.yfshadaow;
+package fun.kaituo;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
@@ -16,6 +16,9 @@ import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import fun.kaituo.event.PlayerChangeGameEvent;
+import fun.kaituo.event.PlayerEndGameEvent;
+import fun.kaituo.utils.ItemStackBuilder;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.minecraft.world.level.block.state.IBlockData;
@@ -23,7 +26,7 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.craftbukkit.v1_18_R1.util.CraftMagicNumbers;
+import org.bukkit.craftbukkit.v1_18_R2.util.CraftMagicNumbers;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -50,7 +53,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static tech.yfshadaow.GameUtils.world;
+import static fun.kaituo.GameUtils.world;
 
 public class SpleefGame extends Game implements Listener {
     private static final SpleefGame instance = new SpleefGame((Spleef) Bukkit.getPluginManager().getPlugin("Spleef"));
@@ -58,6 +61,7 @@ public class SpleefGame extends Game implements Listener {
     ProtocolManager pm;
     ItemStack shovel;
     ItemStack snowball;
+    int countDownSeconds = 10;
 
     private SpleefGame(Spleef plugin) {
         this.plugin = plugin;
@@ -65,8 +69,10 @@ public class SpleefGame extends Game implements Listener {
         playersAlive = new ArrayList<>();
         shovel = new ItemStackBuilder(Material.STONE_SHOVEL).setUnbreakable(true).setDisplayName("§e全村最好的铲子").build();
         snowball = new ItemStackBuilder(Material.SNOWBALL).setDisplayName("§b雪球炸弹").build();
-        initGame(plugin, "Spleef", "§e掘一死战", 5, new Location(world, 1000, 7, 4), BlockFace.NORTH, new Location(world, 996, 7, 0),
-                BlockFace.EAST, new Location(world, 1000, 6, 0), new BoundingBox(700, -64, -300, 1300, 320, 300));
+        initializeGame(plugin, "Spleef", "§e掘一死战", new Location(world, 1000, 6, 0),
+                new BoundingBox(700, -64, -300, 1300, 320, 300));
+        initializeButtons(new Location(world, 1000, 7, 4), BlockFace.NORTH, new Location(world, 996, 7, 0),
+                BlockFace.EAST);
         Bukkit.getScheduler().runTask(plugin, () -> {
             pm = ProtocolLibrary.getProtocolManager();
         });
@@ -169,7 +175,7 @@ public class SpleefGame extends Game implements Listener {
     }
 
     @Override
-    protected void initGameRunnable() {
+    protected void initializeGameRunnable() {
         gameRunnable = () -> {
             World world = Bukkit.getWorld("world");
             for (Entity e : world.getNearbyEntities(new Location(world, 1000, 6, 0), 10, 10, 10)) {
@@ -185,7 +191,7 @@ public class SpleefGame extends Game implements Listener {
                 players.clear();
                 playersAlive.clear();
             } else {
-                startCountdown();
+                startCountdown(countDownSeconds);
                 pasteSchematic("spleef1", 1000, 100, 0, true);
                 Bukkit.getPluginManager().registerEvents(this, plugin);
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -251,11 +257,7 @@ public class SpleefGame extends Game implements Listener {
                         }, 100);
                         players.clear();
                         playersAlive.clear();
-                        List<Integer> taskIdsCopy = new ArrayList<>(taskIds);
-                        taskIds.clear();
-                        for (int i : taskIdsCopy) {
-                            Bukkit.getScheduler().cancelTask(i);
-                        }
+                        cancelGameTasks();
                     }
                 }, 100, 1));
             }
