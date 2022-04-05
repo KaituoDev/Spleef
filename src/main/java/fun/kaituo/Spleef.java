@@ -44,6 +44,7 @@ public class Spleef extends JavaPlugin implements Listener {
         players = new ArrayList<>();
         Bukkit.getPluginManager().registerEvents(this, this);
         GameUtils.registerGame(getGameInstance());
+        saveDefaultConfig();
     }
 
     public void onDisable() {

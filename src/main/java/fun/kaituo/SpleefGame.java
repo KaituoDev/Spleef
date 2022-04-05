@@ -26,6 +26,7 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.craftbukkit.v1_18_R2.util.CraftMagicNumbers;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -62,9 +63,11 @@ public class SpleefGame extends Game implements Listener {
     ItemStack shovel;
     ItemStack snowball;
     int countDownSeconds = 10;
+    FileConfiguration c;
 
     private SpleefGame(Spleef plugin) {
         this.plugin = plugin;
+        c = plugin.getConfig();
         players = Spleef.players;
         playersAlive = new ArrayList<>();
         shovel = new ItemStackBuilder(Material.STONE_SHOVEL).setUnbreakable(true).setDisplayName("§e全村最好的铲子").build();
@@ -123,7 +126,7 @@ public class SpleefGame extends Game implements Listener {
         if (phe.getEntity().getScoreboardTags().contains("spleef")) {
             if (gameBoundingBox.contains(phe.getEntity().getLocation().toVector())) {
                 if (phe.getEntity().getLocation().getY() > 30) {
-                    world.createExplosion(phe.getEntity().getLocation(), 1.1F, false, true);
+                    world.createExplosion(phe.getEntity().getLocation(), (float) c.getDouble("snowball-explosion-power"), false, true);
                 }
             }
         }
@@ -234,7 +237,7 @@ public class SpleefGame extends Game implements Listener {
                     for (Player p : playersAlive) {
                         p.getInventory().addItem(snowball);
                     }
-                }, countDownSeconds * 20L + 200, 200));
+                }, countDownSeconds * 20L + 200, c.getInt("snowball-give-interval")));
                 taskIds.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                     if (playersAlive.size() <= 1) {
                         Player winner = playersAlive.get(0);
