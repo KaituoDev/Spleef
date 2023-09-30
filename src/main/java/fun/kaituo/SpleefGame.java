@@ -156,11 +156,6 @@ public class SpleefGame extends Game implements Listener {
         }
     }
 
-    @EventHandler
-    public void onPlayerChangeGame(PlayerChangeGameEvent pcge) {
-        players.remove(pcge.getPlayer());
-        playersAlive.remove(pcge.getPlayer());
-    }
 
     private void initializeGameRunnable() {
         gameRunnable = () -> {
