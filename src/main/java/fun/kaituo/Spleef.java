@@ -1,7 +1,8 @@
 package fun.kaituo;
 
 
-import fun.kaituo.event.PlayerChangeGameEvent;
+import fun.kaituo.gameutils.GameUtils;
+import fun.kaituo.gameutils.event.PlayerChangeGameEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -17,10 +18,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.ArrayList;
 import java.util.List;
 
-import static fun.kaituo.GameUtils.unregisterGame;
-import static fun.kaituo.GameUtils.world;
 
 public class Spleef extends JavaPlugin implements Listener {
+    private GameUtils gameUtils;
     static List<Player> players;
 
     public static SpleefGame getGameInstance() {
@@ -35,15 +35,16 @@ public class Spleef extends JavaPlugin implements Listener {
         if (!pie.getClickedBlock().getType().equals(Material.OAK_BUTTON)) {
             return;
         }
-        if (pie.getClickedBlock().getLocation().equals(new Location(world, 1000, 7, 4))) {
+        if (pie.getClickedBlock().getLocation().equals(new Location(gameUtils.getWorld(), 1000, 7, 4))) {
             SpleefGame.getInstance().startGame();
         }
     }
 
     public void onEnable() {
+        gameUtils = (GameUtils) Bukkit.getPluginManager().getPlugin("GameUtils");
         players = new ArrayList<>();
         Bukkit.getPluginManager().registerEvents(this, this);
-        GameUtils.registerGame(getGameInstance());
+        gameUtils.registerGame(getGameInstance());
         saveDefaultConfig();
     }
 
@@ -52,10 +53,10 @@ public class Spleef extends JavaPlugin implements Listener {
         HandlerList.unregisterAll((Plugin) this);
         if (players.size() > 0) {
             for (Player p : players) {
-                p.teleport(new Location(world, 0.5, 89.0, 0.5));
+                p.teleport(new Location(gameUtils.getWorld(), 0.5, 89.0, 0.5));
                 Bukkit.getPluginManager().callEvent(new PlayerChangeGameEvent(p, getGameInstance(), null));
             }
         }
-        unregisterGame(getGameInstance());
+        gameUtils.unregisterGame(getGameInstance());
     }
 }
