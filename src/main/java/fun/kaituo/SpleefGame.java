@@ -21,7 +21,9 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -34,13 +36,17 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.MainHand;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 
+import java.awt.desktop.UserSessionEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -53,6 +59,9 @@ public class SpleefGame extends Game implements Listener {
     List<Player> playersAlive;
     ItemStack shovel;
     ItemStack snowball;
+    ItemStack feather;
+    ItemStack kb_stick;
+    ItemStack air;
     int countDownSeconds = 10;
     FileConfiguration c;
 
@@ -65,6 +74,9 @@ public class SpleefGame extends Game implements Listener {
         playersAlive = new ArrayList<>();
         shovel = new ItemStackBuilder(Material.STONE_SHOVEL).setUnbreakable(true).setDisplayName("§e全村最好的铲子").build();
         snowball = new ItemStackBuilder(Material.SNOWBALL).setDisplayName("§b雪球炸弹").build();
+        feather = new ItemStackBuilder(Material.FEATHER).setDisplayName("§e§l飞升").setLore("§b受任于坠落之际，奉命于危难之间").build();
+        kb_stick = new ItemStackBuilder(Material.DEBUG_STICK).setDisplayName("§c§l击退棒").setLore("§eReady to lift off!").addEnchantment(Enchantment.KNOCKBACK, 1).build();
+        air = new ItemStackBuilder(Material.AIR).build();
         initializeGame(plugin, "Spleef", "§e掘一死战", new Location(world, 1000, 6, 0));
         initializeButtons(new Location(world, 1000, 7, 4), BlockFace.NORTH, new Location(world, 996, 7, 0),
                 BlockFace.EAST);
@@ -76,6 +88,8 @@ public class SpleefGame extends Game implements Listener {
     }
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent pie) {
+
+        //判定挖掘
         if (pie.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
             if (playersAlive.contains(pie.getPlayer())) {
                 if (!pie.getClickedBlock().getType().equals(Material.BARRIER)) {
@@ -87,6 +101,33 @@ public class SpleefGame extends Game implements Listener {
                     }
                 }
             }
+        }
+
+        //判定技能
+        if (!pie.getAction().equals(Action.RIGHT_CLICK_AIR) && !pie.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
+            return;
+        }// 不是使用技能
+        if (pie.getItem() == null) {
+            return;
+        }//没有物品
+        Player executor = pie.getPlayer();
+        if (!playersAlive.contains(executor)) {
+            return;
+        }//不在玩家列表中
+        if (pie.getPlayer().getInventory().getItemInMainHand().equals(feather)) {
+            int x = (int) pie.getPlayer().getLocation().getX();
+            int y = (int) pie.getPlayer().getLocation().getY();
+            int z = (int) pie.getPlayer().getLocation().getZ();
+            for (int i = x - 1; i <= x + 1; i += 1) {
+                for (int j = y + 1; j <= 225; j += 1) {
+                    for (int k = z - 1; k <= z + 1; k += 1) {
+                        world.getBlockAt(i, j, k).setType(Material.AIR);
+                    }
+                }
+            }
+            pie.getPlayer().spigot().sendMessage(ChatMessageType.CHAT, new TextComponent("§e§l飞起来！(喜)"));
+            executor.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 20, 49));
+            executor.getInventory().setItem(1,air);
         }
     }
 
@@ -101,25 +142,31 @@ public class SpleefGame extends Game implements Listener {
 
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent phe) {
+        float ExplosionPowerRatio = 1;
+        if (!isNormalMode()) {
+            ExplosionPowerRatio = (float) c.getDouble("explosion-power-ratio");
+        }
         if (phe.getEntity().getScoreboardTags().contains("spleef")) {
             if (gameBoundingBox.contains(phe.getEntity().getLocation().toVector())) {
                 if (phe.getEntity().getLocation().getY() > 30) {
                     int x = phe.getEntity().getLocation().getBlockX();
+                    int y = phe.getEntity().getLocation().getBlockY();
                     int z = phe.getEntity().getLocation().getBlockZ();
                     for (int i = x - 1; i <= x + 1; i += 1) {
-                        for (int j = 97; j <= 122; j += 1) {
+                        for (int j = y - 2; j <= y + 2; j += 1) {
                             for (int k = z - 1; k <= z + 1; k += 1) {
                                 world.getBlockAt(i, j, k).setType(Material.AIR);
                             }
                         }
                     }
-                    world.createExplosion(phe.getEntity().getLocation(), (float) c.getDouble("snowball-explosion-power"), false, true);
+                    world.createExplosion(phe.getEntity().getLocation(), ExplosionPowerRatio * ((float) c.getDouble("snowball-explosion-power")), false, true);
                 }
             }
         }
     }
+
     @EventHandler
-    public void preventDroppingItem(PlayerDropItemEvent pdie) {
+    public void preventPlayerDroppingItem(PlayerDropItemEvent pdie) {
         if (playersAlive.contains(pdie.getPlayer())) {
             pdie.setCancelled(true);
         }
@@ -146,16 +193,16 @@ public class SpleefGame extends Game implements Listener {
         }
     }
 
-
     @EventHandler
     public void preventDamage(EntityDamageEvent ede) {
         if (ede.getEntity() instanceof Player) {
-            if (playersAlive.contains(ede.getEntity())) {
-                ede.setCancelled(true);
+            if (playersAlive.contains(ede.getEntity()) && !isNormalMode()) {
+                if (!ede.getCause().equals(EntityDamageEvent.DamageCause.ENTITY_ATTACK)) {
+                    ede.setCancelled(true);
+                }
             }
         }
     }
-
 
     private void initializeGameRunnable() {
         gameRunnable = () -> {
@@ -173,28 +220,50 @@ public class SpleefGame extends Game implements Listener {
                 players.clear();
                 playersAlive.clear();
             } else {
+                short SnowballGivingNum;
+                float ExplosionPowerRatio;
+                boolean GlobalGameMode = isNormalMode(); //true = 普通模式，false = 无限火力
+                String SchematicName;
+                if (GlobalGameMode) {
+                    SchematicName = "spleef1";
+                    SnowballGivingNum = 1;
+                    ExplosionPowerRatio = 1;
+                }
+                else {
+                    SchematicName = "spleef_3floor";
+                    SnowballGivingNum = 64;
+                    ExplosionPowerRatio = 4;
+                }
                 startCountdown(countDownSeconds);
-                pasteSchematic("spleef1", 1000, 100, 0, true);
+                pasteSchematic(SchematicName, 1000, 200, 0, true);
                 Bukkit.getPluginManager().registerEvents(this, plugin);
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     placeSpectateButton();
                     removeStartButton();
                     for (Player p : players) {
-                        p.teleport(new Location(world, 1000, 100, 0));
+                        p.teleport(new Location(world, 1000, 200, 0));
                         p.getInventory().clear();
                         p.setPlayerWeather(WeatherType.DOWNFALL);
                     }
                 });
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     for (Player p : players) {
-                        p.getInventory().setItem(0, shovel);
+                        if (GlobalGameMode) { // true = 常规模式 false = 无限火力模式
+                            p.getInventory().setItem(0, shovel);
+                            p.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 65536, 49, false, false));
+                        }
+                        else {
+                            p.getInventory().setItem(0, kb_stick);
+                            p.getInventory().setItem(1, feather);
+                            p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 65536, 9, false, false));
+                        }
                         p.setGameMode(GameMode.SURVIVAL);
                         //Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "item replace entity " + p.getName() + " hotbar.0 with iron_pickaxe{Unbreakable:1,HideFlags:13,CanDestroy:[white_concrete,blue_ice,brown_concrete,green_concrete,light_blue_stained_glass_pane,sea_lantern,cobblestone_slab,polished_andesite,stone_brick_wall,stone_brick_stairs,stone_brick_slab]} 1");
                         //Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "item replace entity " + p.getName() + " hotbar.0 with iron_pickaxe{Unbreakable:1} 1");
-                        p.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 999999, 49, false, false));
-                        p.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, 999999, 0, false, false));
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, 65536, 0, false, false));
                     }
                 }, countDownSeconds * 20L);
+
                 taskIds.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                     Player playerOut = null;
                     for (Player p : playersAlive) {
@@ -214,7 +283,9 @@ public class SpleefGame extends Game implements Listener {
                 }, countDownSeconds * 20L, 1));
                 taskIds.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                     for (Player p : playersAlive) {
-                        p.getInventory().addItem(snowball);
+                        for (int i = 0; i < SnowballGivingNum; i += 1) {
+                            p.getInventory().addItem(snowball);
+                        }
                     }
                 }, countDownSeconds * 20L + 200, c.getInt("snowball-give-interval")));
                 taskIds.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
@@ -228,7 +299,7 @@ public class SpleefGame extends Game implements Listener {
                             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                                 p.teleport(new Location(world, 1000.5, 6.0625, 0.5));
                                 Bukkit.getPluginManager().callEvent(new PlayerEndGameEvent(p, this));
-                                pasteSchematic("spleefempty", 1000, 100, 0, false);
+                                pasteSchematic("spleefempty", 1000, 200, 0, false);
                                 p.resetPlayerWeather();
                             }, 100);
                         }
@@ -347,6 +418,14 @@ public class SpleefGame extends Game implements Listener {
                 return new Block[]{block};
             }
 
+        }
+    }
+
+    private boolean isNormalMode() { //用于分别普通模式和无限火力模式
+        if (world.getBlockAt(1003, 7, 5).isBlockPowered()) {
+            return false;
+        } else {
+            return true;
         }
     }
 }
