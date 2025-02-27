@@ -68,7 +68,6 @@ public class SpleefGame extends Game implements Listener {
     private final BoundingBox gameBoundingBox = new BoundingBox(700, -64, -300, 1300, 320, 300);
 
     private SpleefGame(Spleef plugin) {
-        this.plugin = plugin;
         c = plugin.getConfig();
         players = Spleef.players;
         playersAlive = new ArrayList<>();
