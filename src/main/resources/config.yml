@@ -2,6 +2,14 @@
   snowball-give-interval: 200
   explosion-power-ratio: 2
 
+  game-range:
+    x-max:
+    y-max:
+    z-max:
+    x-min:
+    y-min:
+    z-min:
+
   map:
     map-top-vertex-ordinate: 150
     map-bottom-vertex-ordinate: 150
