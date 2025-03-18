@@ -3,12 +3,12 @@
   explosion-power-ratio: 2
 
   game-range:
-    x-max:
-    y-max:
-    z-max:
-    x-min:
-    y-min:
-    z-min:
+    x-max: 1200
+    y-max: 320
+    z-max: 200
+    x-min: 800
+    y-min: -35
+    z-min: -200
 
   map:
     map-top-vertex-ordinate: 150
@@ -17,4 +17,4 @@
     map-origin-point:
       x: 1000
       y: 100
-      z: 1000
+      z: 0

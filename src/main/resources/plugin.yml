@@ -1,5 +1,5 @@
 name: Spleef
 main: fun.kaituo.Spleef
-version: 2.0.1
+version: 3.0.2
 author: YFshadaow & APairOfMoons
 depend: [GameUtils,WorldEdit,ProtocolLib]
