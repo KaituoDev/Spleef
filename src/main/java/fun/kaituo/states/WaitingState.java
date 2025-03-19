@@ -14,6 +14,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import java.util.UUID;
 
 public class WaitingState implements GameState, Listener {
+    private int secondTimer = 0;
+
     @EventHandler
     public void gameStartListener(PlayerInteractEvent pie) {
         if (pie.getClickedBlock() == null) {
@@ -26,12 +28,12 @@ public class WaitingState implements GameState, Listener {
             return;
         }
         if (Bukkit.getScheduler().isCurrentlyRunning(Spleef.inst().mapEditTaskID) || Bukkit.getScheduler().isQueued(Spleef.inst().mapEditTaskID)) {
-            pie.getPlayer().sendMessage("&c地图正在清理中，请稍后再开始游戏！");
+            pie.getPlayer().sendMessage("§c地图正在清理中，请稍后再开始游戏！");
             pie.setCancelled(true);
             return;
         }
         if (Spleef.inst().playerIds.size() < 2) {
-            pie.getPlayer().sendMessage("&c游戏玩家不足，无法开始游戏！");
+            pie.getPlayer().sendMessage("§c游戏玩家不足，无法开始游戏！");
             pie.setCancelled(true);
             return;
         }
@@ -52,8 +54,8 @@ public class WaitingState implements GameState, Listener {
                     continue;
                 }
                 player.setGameMode(GameMode.ADVENTURE);
-                player.teleport(location);
-                player.setRespawnLocation(location, true);
+                player.teleport(Spleef.getLobbySpawnPoint());
+                player.setRespawnLocation(Spleef.getLobbySpawnPoint(), true);
 
                 Spleef.inst().playerSurvivalStage.put(uuid, false);
                 ++Spleef.inst().survivingPlayerNumber;
@@ -68,8 +70,11 @@ public class WaitingState implements GameState, Listener {
 
     @Override
     public void tick() {
+        ++secondTimer;
 
-        Spleef.inst().verityPlayerList();
+        if (secondTimer%20 == 0) {
+            Spleef.inst().verityPlayerList();
+        }
     }
 
     @Override
@@ -79,8 +84,8 @@ public class WaitingState implements GameState, Listener {
         ++Spleef.inst().survivingPlayerNumber;
 
         player.setGameMode(GameMode.ADVENTURE);
-        player.teleport(location);
-        player.setRespawnLocation(location);
+        player.teleport(Spleef.getLobbySpawnPoint());
+        player.setRespawnLocation(Spleef.getLobbySpawnPoint());
         player.clearActivePotionEffects();
     }
 
@@ -93,7 +98,7 @@ public class WaitingState implements GameState, Listener {
 
     @Override
     public void forceStop() {
-        getLogger().warning("Spleef > 错误：无法终止游戏");
-        getLogger().warning("Spleef > 原因：游戏尚未开始运行");
+        Spleef.inst().getLogger().warning("Spleef > 错误：无法终止游戏");
+        Spleef.inst().getLogger().warning("Spleef > 原因：游戏尚未开始运行");
     }
 }

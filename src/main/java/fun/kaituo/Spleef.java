@@ -12,6 +12,8 @@ import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import fun.kaituo.commands.SpleefClearMapCommand;
+import fun.kaituo.commands.SpleefDebugCommand;
 import fun.kaituo.gameutils.GameUtils;
 import fun.kaituo.gameutils.game.Game;
 import fun.kaituo.states.WaitingState;
@@ -37,6 +39,7 @@ public class Spleef extends Game implements Listener {
     private static FileConfiguration config;
     private static World world;
     private static Location mapOriginPoint;
+    private static Location lobbySpawnPoint;
     private static BoundingBox gameBoundingBox;
 
     public static Spleef inst() {
@@ -49,6 +52,10 @@ public class Spleef extends Game implements Listener {
 
     public static World getGameWorld() {
         return world;
+    }
+
+    public static Location getLobbySpawnPoint() {
+        return lobbySpawnPoint;
     }
 
     public static Location getMapOriginPoint() {
@@ -95,9 +102,13 @@ public class Spleef extends Game implements Listener {
         config = this.getConfig();
         world = GameUtils.inst().getMainWorld();
         mapOriginPoint = new Location(world,
-                Spleef.getPluginConfig().getInt("map.map-origin-point.x"),
-                Spleef.getPluginConfig().getInt("map.map-origin-point.y"),
-                Spleef.getPluginConfig().getInt("map.map-origin-point.z"));
+                config.getInt("map.map-origin-point.x"),
+                config.getInt("map.map-origin-point.y"),
+                config.getInt("map.map-origin-point.z"));
+        lobbySpawnPoint = new Location(world,
+                config.getDouble("lobby.spawn-x"),
+                config.getDouble("lobby.spawn-y"),
+                config.getDouble("lobby.spawn-z"));
         gameBoundingBox = new BoundingBox(config.getInt("game-range.x-max"),
                 config.getInt("game-range.y-max"),
                 config.getInt("game-range.z-max"),
@@ -107,6 +118,7 @@ public class Spleef extends Game implements Listener {
         super.onEnable();
         saveDefaultConfig();
         updateExtraInfo("§e掘一死战", getLoc("hub"));
+        registerCommands();
 
         Bukkit.getScheduler().runTaskLater(this, () -> {
             setState(new WaitingState());
@@ -148,6 +160,18 @@ public class Spleef extends Game implements Listener {
             return false;
         }
         return true;
+    }
+
+    public void registerCommands() {
+        // 注册调试命令
+        SpleefDebugCommand debugCmd = new SpleefDebugCommand();
+        getCommand("spleefdebug").setExecutor(debugCmd);
+        getCommand("spleefdebug").setTabCompleter(debugCmd);
+
+        // 注册清理地图命令
+        SpleefClearMapCommand clearCmd = new SpleefClearMapCommand();
+        getCommand("spleefclearmap").setExecutor(clearCmd);
+        getCommand("spleefclearmap").setTabCompleter(clearCmd);
     }
 
     public void pasteSchematic(String name, Location originPoint, boolean ignoreAir) {
@@ -237,4 +261,6 @@ public class Spleef extends Game implements Listener {
             }
         }
     }
+
+
 }

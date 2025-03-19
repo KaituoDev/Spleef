@@ -3,3 +3,12 @@ main: fun.kaituo.Spleef
 version: 3.0.2
 author: YFshadaow & APairOfMoons
 depend: [GameUtils,WorldEdit,ProtocolLib]
+
+commands:
+  spleefdebug:
+    description: Debug command for Spleef game
+    usage: /spleefdebug show <players|playernum|survival>
+
+  spleefclearmap:
+    description: Map clearing command for Spleef game
+    usage: /spleefclearmap

@@ -16,6 +16,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -28,7 +29,7 @@ import org.bukkit.util.BoundingBox;
 import java.time.Duration;
 import java.util.UUID;
 
-public class RunningState extends Spleef implements GameState {
+public class RunningState implements GameState, Listener {
     private Spleef game;
 
     private final ItemStack shovel = new ItemStackBuilder(Material.STONE_SHOVEL).setUnbreakable(true).setDisplayName("§e§l全村最好的铲子").build();
@@ -67,8 +68,8 @@ public class RunningState extends Spleef implements GameState {
             return;
         }
         pie.setCancelled(true);
-        getGameWorld().playSound(pie.getClickedBlock().getLocation(), Sound.BLOCK_SNOW_BREAK, 1.0f, 1.0f);
-        getGameWorld().spawnParticle(Particle.BLOCK, pie.getClickedBlock().getLocation().clone().add(0.5, 0.5, 0.5), 50, pie.getClickedBlock());
+        Spleef.getGameWorld().playSound(pie.getClickedBlock().getLocation(), Sound.BLOCK_SNOW_BREAK, 1.0f, 1.0f);
+        Spleef.getGameWorld().spawnParticle(Particle.BLOCK, pie.getClickedBlock().getLocation().clone().add(0.5, 0.5, 0.5), 50, pie.getClickedBlock());
         pie.getClickedBlock().setType(Material.AIR);
     }
 
@@ -112,7 +113,7 @@ public class RunningState extends Spleef implements GameState {
                 for (int j = playerLocation.getBlockY(); j <= playerLocation.getBlockY() + 10; ++j) {
                     for (int i = playerLocation.getBlockX() - 1; i <= playerLocation.getBlockX() + 1; ++i) {
                         for (int k = playerLocation.getBlockZ() - 1; k <= playerLocation.getBlockZ() + 1; ++k) {
-                            getGameWorld().getBlockAt(i, j, k).setType(Material.AIR);
+                            Spleef.getGameWorld().getBlockAt(i, j, k).setType(Material.AIR);
                         }
                     }
                 }
@@ -127,16 +128,16 @@ public class RunningState extends Spleef implements GameState {
 
     @EventHandler
     public void onPlayerBreakBlock(BlockBreakEvent bbe) {
-        if (bbe.getBlock().getLocation().getBlockX() < getGameBox().getMinX()) {
+        if (bbe.getBlock().getLocation().getBlockX() < Spleef.getGameBox().getMinX()) {
             return;
         }
-        if (bbe.getBlock().getLocation().getBlockX() > getGameBox().getMaxX()) {
+        if (bbe.getBlock().getLocation().getBlockX() > Spleef.getGameBox().getMaxX()) {
             return;
         }
-        if (bbe.getBlock().getLocation().getBlockZ() < getGameBox().getMinZ()) {
+        if (bbe.getBlock().getLocation().getBlockZ() < Spleef.getGameBox().getMinZ()) {
             return;
         }
-        if (bbe.getBlock().getLocation().getBlockZ() > getGameBox().getMaxZ()) {
+        if (bbe.getBlock().getLocation().getBlockZ() > Spleef.getGameBox().getMaxZ()) {
             return;
         }
 
@@ -154,7 +155,7 @@ public class RunningState extends Spleef implements GameState {
             return;
         }
         Entity snowball = phe.getEntity();
-        BoundingBox box = getGameBox();
+        BoundingBox box = Spleef.getGameBox();
         if (snowball.getLocation().getX() < box.getMinX() || snowball.getLocation().getX() > box.getMaxX()) {
             return;
         }
@@ -180,11 +181,11 @@ public class RunningState extends Spleef implements GameState {
         for (int i = x - 1; i <= x + 1; i += 1) {
             for (int j = y - 2; j <= y + 2; j += 1) {
                 for (int k = z - 1; k <= z + 1; k += 1) {
-                    getGameWorld().getBlockAt(i, j, k).setType(Material.AIR);
+                    Spleef.getGameWorld().getBlockAt(i, j, k).setType(Material.AIR);
                 }
             }
         }
-        getGameWorld().createExplosion(phe.getEntity().getLocation(), snowballExplosionPower, false, true);
+        Spleef.getGameWorld().createExplosion(phe.getEntity().getLocation(), snowballExplosionPower, false, true);
     }
 
     @Override
@@ -227,6 +228,8 @@ public class RunningState extends Spleef implements GameState {
             countdownBossBar.setTitle("死亡竞赛 开始于:" + stateCountdown/20 + "秒后");
             double progress = Math.max(0.0, (double) stateCountdown / STATE_DURATION);
             countdownBossBar.setProgress(progress);
+
+            Spleef.inst().verityPlayerList();
         }
 
         if (gameMode) {
@@ -276,8 +279,6 @@ public class RunningState extends Spleef implements GameState {
                 }
             }
         }
-
-        Spleef.inst().verityPlayerList();
     }
 
     @Override
@@ -286,8 +287,8 @@ public class RunningState extends Spleef implements GameState {
         Spleef.inst().playerSurvivalStage.put(player.getUniqueId(), false);
 
         player.setGameMode(GameMode.SPECTATOR);
-        player.teleport(getMapOriginPoint());
-        player.setRespawnLocation(location);
+        player.teleport(Spleef.getMapOriginPoint());
+        player.setRespawnLocation(Spleef.getLobbySpawnPoint());
         player.clearActivePotionEffects();
 
         countdownBossBar.addPlayer(player);
@@ -308,7 +309,7 @@ public class RunningState extends Spleef implements GameState {
     public void forceStop() {
         countdownBossBar.removeAll();
         if (Bukkit.getScheduler().isCurrentlyRunning(Spleef.inst().mapEditTaskID) || Bukkit.getScheduler().isQueued(Spleef.inst().mapEditTaskID)) {
-            Bukkit.getScheduler().cancelTask(mapEditTaskID);
+            Bukkit.getScheduler().cancelTask(Spleef.inst().mapEditTaskID);
         }
         Spleef.inst().clearMap();
         Spleef.inst().setState(new WaitingState());

@@ -10,35 +10,36 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
 
 import java.util.UUID;
 
-public class PreparingState extends Spleef implements GameState {
+public class PreparingState implements GameState, Listener {
     private int preparingCountdown = 200;
-    private final int originX = Spleef.getPluginConfig().getInt("map.map-origin-point.x");
-    private final int originY = Spleef.getPluginConfig().getInt("map.map-origin-point.y");
-    private final int originZ = Spleef.getPluginConfig().getInt("map.map-origin-point.z");
+
+    private final Location mapOriginPoint = Spleef.getMapOriginPoint();
+    private final Location playerOriginPoint = mapOriginPoint.add(0.5, 0, 0.5);
 
     @Override
     public void enter() {
         Bukkit.getPluginManager().registerEvents(this, Spleef.inst());
 
         if (Spleef.inst().survivingPlayerNumber < 2) {
-            getLogger().warning("Spleef > 错误：无法开始游戏");
-            getLogger().warning("Spleef > 原因：玩家数量异常");
+            Spleef.inst().getLogger().warning("Spleef > 错误：无法开始游戏");
+            Spleef.inst().getLogger().warning("Spleef > 原因：玩家数量异常");
             Spleef.inst().setState(new WaitingState());
             return;
         }
 
         String schematicName;
-        if (isNormalMode()) {
+        if (Spleef.inst().isNormalMode()) {
             schematicName = "spleef1";
         }
         else {
             schematicName = "spleef_3floor";
         }
 
-        pasteSchematic(schematicName, getMapOriginPoint(), true);
+        Spleef.inst().pasteSchematic(schematicName, mapOriginPoint, true);
 
         Spleef.inst().playerSurvivalStage.clear();
         Spleef.inst().survivingPlayerNumber = 0;
@@ -51,7 +52,7 @@ public class PreparingState extends Spleef implements GameState {
             Spleef.inst().playerSurvivalStage.put(uuid, true);
             ++Spleef.inst().survivingPlayerNumber;
             player.setGameMode(GameMode.SURVIVAL);
-            player.teleport(getMapOriginPoint());
+            player.teleport(playerOriginPoint);
         }
     }
 
@@ -73,6 +74,8 @@ public class PreparingState extends Spleef implements GameState {
                 }
                 showCountdown("游戏即将开始", preparingCountdown, countdownColor);
             }
+
+            Spleef.inst().verityPlayerList();
         }
         if (preparingCountdown <= 0) {
             for (UUID uuid : Spleef.inst().playerIds) {
@@ -83,8 +86,6 @@ public class PreparingState extends Spleef implements GameState {
             }
             Spleef.inst().setState(new RunningState());
         }
-
-        Spleef.inst().verityPlayerList();
     }
 
     @Override
@@ -94,8 +95,8 @@ public class PreparingState extends Spleef implements GameState {
         ++Spleef.inst().survivingPlayerNumber;
 
         player.setGameMode(GameMode.SURVIVAL);
-        player.teleport(getMapOriginPoint());
-        player.setRespawnLocation(location);
+        player.teleport(playerOriginPoint);
+        player.setRespawnLocation(Spleef.getLobbySpawnPoint());
         player.clearActivePotionEffects();
     }
 
@@ -109,7 +110,7 @@ public class PreparingState extends Spleef implements GameState {
     @Override
     public void forceStop() {
         if (Bukkit.getScheduler().isCurrentlyRunning(Spleef.inst().mapEditTaskID) || Bukkit.getScheduler().isQueued(Spleef.inst().mapEditTaskID)) {
-            Bukkit.getScheduler().cancelTask(mapEditTaskID);
+            Bukkit.getScheduler().cancelTask(Spleef.inst().mapEditTaskID);
         }
         Spleef.inst().clearMap();
         Spleef.inst().setState(new WaitingState());
