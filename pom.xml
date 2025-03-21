@@ -32,12 +32,6 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
-
-                    <!-- 用于排除老版本Spleef的SpleefGame.java，删除即可 -->
-                    <excludes>
-                        <exclude>**/SpleefGame.java</exclude>
-                    </excludes>
-
                 </configuration>
             </plugin>
             <plugin>

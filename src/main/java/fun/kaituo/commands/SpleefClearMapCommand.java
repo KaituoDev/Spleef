@@ -1,7 +1,6 @@
 package fun.kaituo.commands;
 
 import fun.kaituo.Spleef;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -15,13 +14,13 @@ public class SpleefClearMapCommand implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         // 权限验证
         if (!sender.isOp()) {
-            sender.sendMessage(ChatColor.RED + "你没有执行此命令的权限!");
+            sender.sendMessage("§c你没有执行此命令的权限!");
             return true;
         }
 
         // 参数校验（无参数）
         if (args.length > 0) {
-            sender.sendMessage(ChatColor.RED + "用法: /spleefclearmap");
+            sender.sendMessage("§c用法: /spleefclearmap");
             return true;
         }
 

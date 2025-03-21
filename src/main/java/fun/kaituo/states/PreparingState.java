@@ -10,7 +10,10 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.UUID;
 
@@ -23,6 +26,7 @@ public class PreparingState implements GameState, Listener {
     @Override
     public void enter() {
         Bukkit.getPluginManager().registerEvents(this, Spleef.inst());
+        Spleef.inst().currentGameState = "PreparingState";
 
         if (Spleef.inst().survivingPlayerNumber < 2) {
             Spleef.inst().getLogger().warning("Spleef > 错误：无法开始游戏");
@@ -49,16 +53,37 @@ public class PreparingState implements GameState, Listener {
                 Spleef.inst().playerIds.remove(uuid);
                 continue;
             }
+
             Spleef.inst().playerSurvivalStage.put(uuid, true);
             ++Spleef.inst().survivingPlayerNumber;
             player.setGameMode(GameMode.SURVIVAL);
             player.teleport(playerOriginPoint);
+            player.getInventory().clear();
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, PotionEffect.INFINITE_DURATION, 4));
+
+            player.showTitle(Title.title(Component.text("游戏即将开始").color(NamedTextColor.GREEN),
+                    Component.text("请做好准备").color(NamedTextColor.GOLD)
+            ));
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1f, 1f);
         }
     }
 
     @Override
     public void exit() {
+        for (UUID uuid : Spleef.inst().playerIds) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) {
+                continue;
+            }
 
+            for (net.kyori.adventure.bossbar.BossBar bar : player.activeBossBars()) {
+                player.hideBossBar(bar);
+            }
+
+            player.clearActivePotionEffects();
+        }
+
+        HandlerList.unregisterAll(this);
     }
 
     @Override
@@ -86,6 +111,8 @@ public class PreparingState implements GameState, Listener {
             }
             Spleef.inst().setState(new RunningState());
         }
+
+        Spleef.inst().confirmPlayerSurvival();
     }
 
     @Override
@@ -98,6 +125,8 @@ public class PreparingState implements GameState, Listener {
         player.teleport(playerOriginPoint);
         player.setRespawnLocation(Spleef.getLobbySpawnPoint());
         player.clearActivePotionEffects();
+        player.getInventory().clear();
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, PotionEffect.INFINITE_DURATION, 4));
     }
 
     @Override
@@ -105,10 +134,23 @@ public class PreparingState implements GameState, Listener {
         Spleef.inst().playerIds.remove(player.getUniqueId());
         Spleef.inst().playerSurvivalStage.remove(player.getUniqueId());
         --Spleef.inst().survivingPlayerNumber;
+
+        player.clearActivePotionEffects();
+        player.getInventory().clear();
     }
 
     @Override
     public void forceStop() {
+        for (UUID uuid : Spleef.inst().playerIds) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) {
+                continue;
+            }
+
+            player.clearActivePotionEffects();
+            player.getInventory().clear();
+        }
+
         if (Bukkit.getScheduler().isCurrentlyRunning(Spleef.inst().mapEditTaskID) || Bukkit.getScheduler().isQueued(Spleef.inst().mapEditTaskID)) {
             Bukkit.getScheduler().cancelTask(Spleef.inst().mapEditTaskID);
         }

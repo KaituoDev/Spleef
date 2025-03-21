@@ -7,9 +7,12 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.UUID;
 
@@ -28,7 +31,7 @@ public class WaitingState implements GameState, Listener {
             return;
         }
         if (Bukkit.getScheduler().isCurrentlyRunning(Spleef.inst().mapEditTaskID) || Bukkit.getScheduler().isQueued(Spleef.inst().mapEditTaskID)) {
-            pie.getPlayer().sendMessage("§c地图正在清理中，请稍后再开始游戏！");
+            pie.getPlayer().sendMessage("§c地图正在清理中，请稍后再试！");
             pie.setCancelled(true);
             return;
         }
@@ -43,6 +46,7 @@ public class WaitingState implements GameState, Listener {
     @Override
     public void enter() {
         Bukkit.getPluginManager().registerEvents(this, Spleef.inst());
+        Spleef.inst().currentGameState = "WaitingState";
 
         Spleef.inst().playerSurvivalStage.clear();
         Spleef.inst().survivingPlayerNumber = 0;
@@ -56,6 +60,8 @@ public class WaitingState implements GameState, Listener {
                 player.setGameMode(GameMode.ADVENTURE);
                 player.teleport(Spleef.getLobbySpawnPoint());
                 player.setRespawnLocation(Spleef.getLobbySpawnPoint(), true);
+                player.getInventory().clear();
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, PotionEffect.INFINITE_DURATION, 4));
 
                 Spleef.inst().playerSurvivalStage.put(uuid, false);
                 ++Spleef.inst().survivingPlayerNumber;
@@ -65,7 +71,20 @@ public class WaitingState implements GameState, Listener {
 
     @Override
     public void exit() {
+        for (UUID uuid : Spleef.inst().playerIds) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) {
+                continue;
+            }
 
+            for (net.kyori.adventure.bossbar.BossBar bar : player.activeBossBars()) {
+                player.hideBossBar(bar);
+            }
+
+            player.clearActivePotionEffects();
+        }
+
+        HandlerList.unregisterAll(this);
     }
 
     @Override
@@ -87,6 +106,12 @@ public class WaitingState implements GameState, Listener {
         player.teleport(Spleef.getLobbySpawnPoint());
         player.setRespawnLocation(Spleef.getLobbySpawnPoint());
         player.clearActivePotionEffects();
+        player.getInventory().clear();
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, PotionEffect.INFINITE_DURATION, 4));
+
+        for (net.kyori.adventure.bossbar.BossBar bar : player.activeBossBars()) {
+            player.hideBossBar(bar);
+        }
     }
 
     @Override
@@ -94,6 +119,9 @@ public class WaitingState implements GameState, Listener {
         Spleef.inst().playerIds.remove(player.getUniqueId());
         Spleef.inst().playerSurvivalStage.remove(player.getUniqueId());
         --Spleef.inst().survivingPlayerNumber;
+
+        player.clearActivePotionEffects();
+        player.getInventory().clear();
     }
 
     @Override

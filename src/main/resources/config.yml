@@ -9,10 +9,10 @@
 
   game-range:
     x-max: 1200
-    y-max: 320
+    y-max: 120
     z-max: 200
     x-min: 800
-    y-min: -35
+    y-min: 35
     z-min: -200
 
   map:

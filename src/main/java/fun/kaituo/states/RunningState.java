@@ -3,9 +3,6 @@ package fun.kaituo.states;
 import fun.kaituo.Spleef;
 import fun.kaituo.gameutils.game.GameState;
 import fun.kaituo.gameutils.util.ItemStackBuilder;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -14,8 +11,8 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -26,25 +23,23 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.BoundingBox;
 
-import java.time.Duration;
 import java.util.UUID;
 
 public class RunningState implements GameState, Listener {
-    private Spleef game;
 
     private final ItemStack shovel = new ItemStackBuilder(Material.STONE_SHOVEL).setUnbreakable(true).setDisplayName("§e§l全村最好的铲子").build();
     private final ItemStack snowball = new ItemStackBuilder(Material.SNOWBALL).setDisplayName("§b§l雪球炸弹").build();
     private final ItemStack feather = new ItemStackBuilder(Material.FEATHER).setDisplayName("§e§l飞升").setLore("§b受任于坠落之际，奉命于危难之间").build();
     private final ItemStack kb_stick = new ItemStackBuilder(Material.DEBUG_STICK).setDisplayName("§c§l击退棒").setLore("§eReady to lift off!").addEnchantment(Enchantment.KNOCKBACK, 1).build();
 
-    private static final int STATE_DURATION = 3600;
+    private static final int STATE_DURATION = 2400;
 
     private int stateCountdown = STATE_DURATION;
     private boolean gameMode = true;
     private int particleSpawnerID;
 
     private BossBar countdownBossBar = Bukkit.createBossBar(
-            "死亡竞赛 开始于:" + stateCountdown + "秒后",
+            "§6死亡竞赛开始于: §f" + stateCountdown/20 + " §6秒后",
             BarColor.YELLOW,
             BarStyle.SOLID
     );
@@ -67,9 +62,8 @@ public class RunningState implements GameState, Listener {
         if (!player.getInventory().getItemInMainHand().equals(shovel)) {
             return;
         }
-        pie.setCancelled(true);
         Spleef.getGameWorld().playSound(pie.getClickedBlock().getLocation(), Sound.BLOCK_SNOW_BREAK, 1.0f, 1.0f);
-        Spleef.getGameWorld().spawnParticle(Particle.BLOCK, pie.getClickedBlock().getLocation().clone().add(0.5, 0.5, 0.5), 50, pie.getClickedBlock());
+        Spleef.getGameWorld().spawnParticle(Particle.BLOCK, pie.getClickedBlock().getLocation().clone().add(0.5, 0.5, 0.5), 50, pie.getClickedBlock().getBlockData());
         pie.getClickedBlock().setType(Material.AIR);
     }
 
@@ -90,12 +84,7 @@ public class RunningState implements GameState, Listener {
         }
 
         int featherAmount = player.getInventory().getItemInMainHand().getAmount();
-        if (featherAmount < 2) {
-            player.getInventory().getItemInMainHand().setType(Material.AIR);
-        }
-        else {
-            player.getInventory().getItemInMainHand().setAmount(featherAmount - 1);
-        }
+        player.getInventory().getItemInMainHand().setAmount(featherAmount - 1);
 
         pie.setCancelled(true);
 
@@ -159,7 +148,7 @@ public class RunningState implements GameState, Listener {
         if (snowball.getLocation().getX() < box.getMinX() || snowball.getLocation().getX() > box.getMaxX()) {
             return;
         }
-        if (snowball.getLocation().getY() < box.getMinZ()) {
+        if (snowball.getLocation().getY() < box.getMinY()) {
             return;
         }
         if (snowball.getLocation().getZ() < box.getMinZ() || snowball.getLocation().getZ() > box.getMaxZ()) {
@@ -191,6 +180,8 @@ public class RunningState implements GameState, Listener {
     @Override
     public void enter() {
         Bukkit.getPluginManager().registerEvents(this, Spleef.inst());
+        Spleef.inst().currentGameState = "RunningState";
+
         gameMode = Spleef.inst().isNormalMode(); // true=普通模式 false=无限火力
         for (UUID uuid : Spleef.inst().playerIds) {
             Player player = Bukkit.getPlayer(uuid);
@@ -212,7 +203,21 @@ public class RunningState implements GameState, Listener {
 
     @Override
     public void exit() {
+        countdownBossBar.removeAll();
+        for (UUID uuid : Spleef.inst().playerIds) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) {
+                continue;
+            }
 
+            for (net.kyori.adventure.bossbar.BossBar bar : player.activeBossBars()) {
+                player.hideBossBar(bar);
+            }
+
+            player.clearActivePotionEffects();
+        }
+
+        HandlerList.unregisterAll(this);
     }
 
     @Override
@@ -225,7 +230,7 @@ public class RunningState implements GameState, Listener {
         }
 
         if (stateCountdown%20 == 0) { //整秒数
-            countdownBossBar.setTitle("死亡竞赛 开始于:" + stateCountdown/20 + "秒后");
+            countdownBossBar.setTitle("§6死亡竞赛开始于: §f" + stateCountdown/20 + "§6 秒后");
             double progress = Math.max(0.0, (double) stateCountdown / STATE_DURATION);
             countdownBossBar.setProgress(progress);
 
@@ -253,32 +258,7 @@ public class RunningState implements GameState, Listener {
             }
         }
 
-        for (UUID uuid : Spleef.inst().playerIds) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player == null) {
-                continue;
-            }
-            if (!Spleef.inst().playerSurvivalStage.get(uuid)) {
-                continue;
-            }
-            if (player.getLocation().getY() < 35) {
-                player.getInventory().clear();
-                player.setGameMode(GameMode.SPECTATOR);
-                Spleef.inst().playerSurvivalStage.remove(player.getUniqueId());
-                Spleef.inst().playerSurvivalStage.put(player.getUniqueId(), false);
-                player.showTitle(Title.title(Component.text("你坠入了深渊！").color(NamedTextColor.RED),
-                        Component.text("你已成为旁观者").color(NamedTextColor.GOLD),
-                        Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(1))
-                ));
-                for (UUID id : Spleef.inst().playerIds) {
-                    Player p = Bukkit.getPlayer(id);
-                    if (p == null) {
-                        continue;
-                    }
-                    p.sendMessage("§f§l" + p.getName() + "§c坠入深渊！");
-                }
-            }
-        }
+        Spleef.inst().confirmPlayerSurvival();
     }
 
     @Override
@@ -290,6 +270,7 @@ public class RunningState implements GameState, Listener {
         player.teleport(Spleef.getMapOriginPoint());
         player.setRespawnLocation(Spleef.getLobbySpawnPoint());
         player.clearActivePotionEffects();
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, PotionEffect.INFINITE_DURATION, 4));
 
         countdownBossBar.addPlayer(player);
     }
@@ -302,6 +283,9 @@ public class RunningState implements GameState, Listener {
             --Spleef.inst().survivingPlayerNumber;
         }
 
+        player.clearActivePotionEffects();
+        player.getInventory().clear();
+
         countdownBossBar.removePlayer(player);
     }
 
@@ -311,6 +295,17 @@ public class RunningState implements GameState, Listener {
         if (Bukkit.getScheduler().isCurrentlyRunning(Spleef.inst().mapEditTaskID) || Bukkit.getScheduler().isQueued(Spleef.inst().mapEditTaskID)) {
             Bukkit.getScheduler().cancelTask(Spleef.inst().mapEditTaskID);
         }
+
+        for (UUID uuid : Spleef.inst().playerIds) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) {
+                continue;
+            }
+
+            player.clearActivePotionEffects();
+            player.getInventory().clear();
+        }
+
         Spleef.inst().clearMap();
         Spleef.inst().setState(new WaitingState());
     }
