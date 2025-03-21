@@ -1,3 +1,25 @@
   snowball-explosion-power: 1.1
   snowball-give-interval: 200
   explosion-power-ratio: 2
+
+  lobby:
+    spawn-x: 1000.5
+    spawn-y: 6.0625
+    spawn-z: 0.5
+
+  game-range:
+    x-max: 1200
+    y-max: 120
+    z-max: 200
+    x-min: 800
+    y-min: 35
+    z-min: -200
+
+  map:
+    map-top-vertex-ordinate: 150
+    map-bottom-vertex-ordinate: 40
+    map-radius: 50
+    map-origin-point:
+      x: 1000
+      y: 100
+      z: 0
