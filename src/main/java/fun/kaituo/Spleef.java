@@ -29,8 +29,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.BoundingBox;
 
 import java.io.File;
@@ -135,12 +133,8 @@ public class Spleef extends Game implements Listener {
         Bukkit.getPluginManager().registerEvents(this, instance);
 
         Bukkit.getScheduler().runTaskLater(this, () -> {
-            instance.clearMap();
-        }, 1);
-
-        Bukkit.getScheduler().runTaskLater(this, () -> {
             setState(new WaitingState());
-        }, 2);
+        }, 1);
     }
 
     @Override
@@ -154,9 +148,6 @@ public class Spleef extends Game implements Listener {
         }
         super.forceStop();
         Bukkit.getScheduler().cancelTasks(this);
-        instance.playerIds.clear();
-        instance.playerSurvivalStage.clear();
-        instance.survivingPlayerNumber = 0;
         super.onDisable();
     }
 
@@ -285,19 +276,27 @@ public class Spleef extends Game implements Listener {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (isPlayerInGameRange(player) && player.getWorld().equals(Spleef.getGameWorld())) {
                 if (!player.getGameMode().equals(GameMode.CREATIVE)) {
-                    if (!Spleef.inst().playerIds.contains(player.getUniqueId())) {
+                    if (!instance.playerIds.contains(player.getUniqueId())) {
                         if (instance.getState() != null) {
                             instance.getState().addPlayer(player);
                         }
                     }
                 }
                 else {
-                    if (Spleef.inst().playerIds.contains(player.getUniqueId())) {
+                    if (instance.playerIds.contains(player.getUniqueId())) {
                         if (instance.getState() != null) {
                             instance.getState().removePlayer(player);
                         }
                     }
                 }
+            }
+        }
+
+        for (UUID uuid : instance.playerIds) {
+            if (Bukkit.getPlayer(uuid) == null) {
+                instance.playerIds.remove(uuid);
+                instance.playerSurvivalStage.remove(uuid);
+                ++instance.survivingPlayerNumber;
             }
         }
     }
@@ -317,61 +316,64 @@ public class Spleef extends Game implements Listener {
                 instance.playerSurvivalStage.remove(player.getUniqueId());
                 instance.playerSurvivalStage.put(player.getUniqueId(), false);
                 --instance.survivingPlayerNumber;
-                if (instance.survivingPlayerNumber < 2) {
-                    Player winner = null;
-                    for (UUID id : instance.playerSurvivalStage.keySet()) {
-                        if (!instance.playerSurvivalStage.get(id)) {
-                            continue;
-                        }
-                        Player aim = Bukkit.getPlayer(id);
-                        if (aim == null) {
-                            continue;
-                        }
-                        winner = aim;
-                    }
-                    String summary;
-                    NamedTextColor summaryColor;
-                    if (winner == null) {
-                        summary = "无人存活！";
-                        summaryColor = NamedTextColor.GRAY;
-                    }
-                    else {
-                        summary = winner.getName() + " 存活到了最后！";
-                        summaryColor = NamedTextColor.GOLD;
-                    }
+                if (instance.survivingPlayerNumber >= 2) {
+                    player.showTitle(Title.title(Component.text("你坠入了深渊！").color(NamedTextColor.RED),
+                            Component.text("你已成为旁观者").color(NamedTextColor.GOLD),
+                            Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(1))
+                    ));
                     for (UUID id : Spleef.inst().playerIds) {
-                        Player aim = Bukkit.getPlayer(id);
-                        if (aim == null) {
+                        Player p = Bukkit.getPlayer(id);
+                        if (p == null) {
                             continue;
                         }
-                        if (aim.equals(winner)) {
-                            aim.showTitle(Title.title(Component.text("胜利！").color(NamedTextColor.GOLD),
-                                    Component.text("你存活到了最后！").color(NamedTextColor.GREEN),
-                                    Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(1))
-                            ));
-                        }
-                        else {
-                            aim.showTitle(Title.title(Component.text("游戏结束！").color(NamedTextColor.RED),
-                                    Component.text(summary).color(summaryColor),
-                                    Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(1))
-                            ));
-                        }
+                        p.sendMessage("§f§l" + player.getName() + "§c 坠入深渊！");
                     }
-                    instance.clearMap();
-                    instance.getState().forceStop();
-                    return;
                 }
-                player.showTitle(Title.title(Component.text("你坠入了深渊！").color(NamedTextColor.RED),
-                        Component.text("你已成为旁观者").color(NamedTextColor.GOLD),
-                        Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(1))
-                ));
-                for (UUID id : Spleef.inst().playerIds) {
-                    Player p = Bukkit.getPlayer(id);
-                    if (p == null) {
+
+            }
+            if (instance.survivingPlayerNumber < 2) {
+                Player winner = null;
+                for (UUID id : instance.playerSurvivalStage.keySet()) {
+                    if (!instance.playerSurvivalStage.get(id)) {
                         continue;
                     }
-                    p.sendMessage("§f§l" + player.getName() + "§c 坠入深渊！");
+                    Player aim = Bukkit.getPlayer(id);
+                    if (aim == null) {
+                        continue;
+                    }
+                    winner = aim;
                 }
+                String summary;
+                NamedTextColor summaryColor;
+                if (winner == null) {
+                    summary = "无人存活！";
+                    summaryColor = NamedTextColor.GRAY;
+                }
+                else {
+                    summary = winner.getName() + " 存活到了最后！";
+                    summaryColor = NamedTextColor.GOLD;
+                }
+                for (UUID id : Spleef.inst().playerIds) {
+                    Player aim = Bukkit.getPlayer(id);
+                    if (aim == null) {
+                        continue;
+                    }
+                    if (aim.equals(winner)) {
+                        aim.showTitle(Title.title(Component.text("胜利！").color(NamedTextColor.GOLD),
+                                Component.text("你存活到了最后！").color(NamedTextColor.GREEN),
+                                Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(1))
+                        ));
+                    }
+                    else {
+                        aim.showTitle(Title.title(Component.text("游戏结束！").color(NamedTextColor.RED),
+                                Component.text(summary).color(summaryColor),
+                                Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(1))
+                        ));
+                    }
+                }
+                instance.clearMap();
+                instance.getState().forceStop();
+                return;
             }
         }
     }

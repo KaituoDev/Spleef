@@ -3,6 +3,7 @@ package fun.kaituo.states;
 import fun.kaituo.Spleef;
 import fun.kaituo.gameutils.game.GameState;
 import fun.kaituo.gameutils.util.ItemStackBuilder;
+import fun.kaituo.gameutils.util.Misc;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
@@ -26,6 +27,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.BoundingBox;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.UUID;
 
 public class DeathRaceState implements GameState, Listener {
@@ -40,9 +42,8 @@ public class DeathRaceState implements GameState, Listener {
 
     private int tick = 0;
     private int currentFloor = (int) Spleef.getGameBox().getMaxY();
-    private int particleSpawnerID;
 
-    private boolean gameMode = true;
+    private HashMap<UUID, Integer> particleSpawnerIDs = new HashMap<>();
 
     private BossBar mapClearBossBar = Bukkit.createBossBar(
             "§c当前最高层: y=" + currentFloor,
@@ -97,7 +98,7 @@ public class DeathRaceState implements GameState, Listener {
         player.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 20, 49));
         player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 100, 0));
 
-        particleSpawnerID = Bukkit.getScheduler().runTaskTimer(Spleef.inst(), new Runnable() {
+        particleSpawnerIDs.put(player.getUniqueId(), Bukkit.getScheduler().runTaskTimer(Spleef.inst(), new Runnable() {
             private int runs = 0;
 
             @Override
@@ -114,11 +115,12 @@ public class DeathRaceState implements GameState, Listener {
                 }
 
                 ++runs;
-                if (runs > 20) {
-                    Bukkit.getScheduler().cancelTask(particleSpawnerID);
+                if (runs > 30) {
+                    Bukkit.getScheduler().cancelTask(particleSpawnerIDs.get(player.getUniqueId()));
+                    particleSpawnerIDs.remove(player.getUniqueId());
                 }
             }
-        }, 0L, 1L).getTaskId();
+        }, 0L, 1L).getTaskId());
     }
 
     @EventHandler
@@ -235,6 +237,10 @@ public class DeathRaceState implements GameState, Listener {
 
             player.clearActivePotionEffects();
         }
+        for (UUID uuid : particleSpawnerIDs.keySet()) {
+            Bukkit.getScheduler().cancelTask(particleSpawnerIDs.get(uuid));
+        }
+        particleSpawnerIDs.clear();
 
         HandlerList.unregisterAll(this);
     }
@@ -264,7 +270,7 @@ public class DeathRaceState implements GameState, Listener {
             Spleef.inst().verityPlayerList();
         }
 
-        if (gameMode) {
+        if (Spleef.inst().isNormalMode()) {
             if (tick%20 == 0) {
                 for (UUID uuid : Spleef.inst().playerIds) {
                     Player player = Bukkit.getPlayer(uuid);
@@ -312,6 +318,7 @@ public class DeathRaceState implements GameState, Listener {
 
         mapClearBossBar.removePlayer(player);
 
+        player.setGameMode(GameMode.ADVENTURE);
         player.clearActivePotionEffects();
         player.getInventory().clear();
     }
@@ -322,9 +329,10 @@ public class DeathRaceState implements GameState, Listener {
         if (Bukkit.getScheduler().isCurrentlyRunning(Spleef.inst().mapEditTaskID) || Bukkit.getScheduler().isQueued(Spleef.inst().mapEditTaskID)) {
             Bukkit.getScheduler().cancelTask(Spleef.inst().mapEditTaskID);
         }
-        if (Bukkit.getScheduler().isCurrentlyRunning(particleSpawnerID) || Bukkit.getScheduler().isQueued(particleSpawnerID)) {
-            Bukkit.getScheduler().cancelTask(particleSpawnerID);
+        for (UUID uuid : particleSpawnerIDs.keySet()) {
+            Bukkit.getScheduler().cancelTask(particleSpawnerIDs.get(uuid));
         }
+        particleSpawnerIDs.clear();
 
         for (UUID uuid : Spleef.inst().playerIds) {
             Player player = Bukkit.getPlayer(uuid);
@@ -334,9 +342,10 @@ public class DeathRaceState implements GameState, Listener {
 
             player.clearActivePotionEffects();
             player.getInventory().clear();
+            player.getInventory().addItem(Misc.getMenu());
+            player.setGameMode(GameMode.ADVENTURE);
         }
 
-        Spleef.inst().clearMap();
         Spleef.inst().setState(new WaitingState());
     }
 }

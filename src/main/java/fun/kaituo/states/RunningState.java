@@ -3,6 +3,7 @@ package fun.kaituo.states;
 import fun.kaituo.Spleef;
 import fun.kaituo.gameutils.game.GameState;
 import fun.kaituo.gameutils.util.ItemStackBuilder;
+import fun.kaituo.gameutils.util.Misc;
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -22,7 +23,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.BoundingBox;
+import org.enginehub.linbus.stream.token.LinToken;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class RunningState implements GameState, Listener {
@@ -36,7 +41,8 @@ public class RunningState implements GameState, Listener {
 
     private int stateCountdown = STATE_DURATION;
     private boolean gameMode = true;
-    private int particleSpawnerID;
+
+    private HashMap<UUID, Integer> particleSpawnerIDs = new HashMap<>();
 
     private BossBar countdownBossBar = Bukkit.createBossBar(
             "§6死亡竞赛开始于: §f" + stateCountdown/20 + " §6秒后",
@@ -91,7 +97,7 @@ public class RunningState implements GameState, Listener {
         player.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 20, 49));
         player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 100, 0));
 
-        particleSpawnerID = Bukkit.getScheduler().runTaskTimer(Spleef.inst(), new Runnable() {
+        particleSpawnerIDs.put(player.getUniqueId(), Bukkit.getScheduler().runTaskTimer(Spleef.inst(), new Runnable() {
             private int runs = 0;
 
             @Override
@@ -108,11 +114,12 @@ public class RunningState implements GameState, Listener {
                 }
 
                 ++runs;
-                if (runs > 20) {
-                    Bukkit.getScheduler().cancelTask(particleSpawnerID);
+                if (runs > 30) {
+                    Bukkit.getScheduler().cancelTask(particleSpawnerIDs.get(player.getUniqueId()));
+                    particleSpawnerIDs.remove(player.getUniqueId());
                 }
             }
-        }, 0L, 1L).getTaskId();
+        }, 0L, 1L).getTaskId());
     }
 
     @EventHandler
@@ -216,6 +223,10 @@ public class RunningState implements GameState, Listener {
 
             player.clearActivePotionEffects();
         }
+        for (UUID uuid : particleSpawnerIDs.keySet()) {
+            Bukkit.getScheduler().cancelTask(particleSpawnerIDs.get(uuid));
+        }
+        particleSpawnerIDs.clear();
 
         HandlerList.unregisterAll(this);
     }
@@ -285,6 +296,7 @@ public class RunningState implements GameState, Listener {
 
         player.clearActivePotionEffects();
         player.getInventory().clear();
+        player.setGameMode(GameMode.ADVENTURE);
 
         countdownBossBar.removePlayer(player);
     }
@@ -295,6 +307,10 @@ public class RunningState implements GameState, Listener {
         if (Bukkit.getScheduler().isCurrentlyRunning(Spleef.inst().mapEditTaskID) || Bukkit.getScheduler().isQueued(Spleef.inst().mapEditTaskID)) {
             Bukkit.getScheduler().cancelTask(Spleef.inst().mapEditTaskID);
         }
+        for (UUID uuid : particleSpawnerIDs.keySet()) {
+            Bukkit.getScheduler().cancelTask(particleSpawnerIDs.get(uuid));
+        }
+        particleSpawnerIDs.clear();
 
         for (UUID uuid : Spleef.inst().playerIds) {
             Player player = Bukkit.getPlayer(uuid);
@@ -304,9 +320,10 @@ public class RunningState implements GameState, Listener {
 
             player.clearActivePotionEffects();
             player.getInventory().clear();
+            player.getInventory().addItem(Misc.getMenu());
+            player.setGameMode(GameMode.ADVENTURE);
         }
 
-        Spleef.inst().clearMap();
         Spleef.inst().setState(new WaitingState());
     }
 }
