@@ -45,6 +45,8 @@ public class DeathRaceState implements GameState, Listener {
 
     private HashMap<UUID, Integer> particleSpawnerIDs = new HashMap<>();
 
+    private boolean gameMode = true;
+
     private BossBar mapClearBossBar = Bukkit.createBossBar(
             "§c当前最高层: y=" + currentFloor,
             BarColor.RED,
@@ -87,6 +89,10 @@ public class DeathRaceState implements GameState, Listener {
             return;
         }
         if (!player.getInventory().getItemInMainHand().isSimilar(feather)) {
+            return;
+        }
+        if (particleSpawnerIDs.containsKey(player.getUniqueId())) {
+            player.sendMessage("§c每次只能使用一个\"飞升\"！");
             return;
         }
 
@@ -190,6 +196,7 @@ public class DeathRaceState implements GameState, Listener {
         Bukkit.getPluginManager().registerEvents(this, Spleef.inst());
         Spleef.inst().currentGameState = "DeathRaceState";
 
+        gameMode = Spleef.inst().isNormalMode();
         for (UUID uuid : Spleef.inst().playerIds) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) {
@@ -270,7 +277,7 @@ public class DeathRaceState implements GameState, Listener {
             Spleef.inst().verityPlayerList();
         }
 
-        if (Spleef.inst().isNormalMode()) {
+        if (gameMode) {
             if (tick%20 == 0) {
                 for (UUID uuid : Spleef.inst().playerIds) {
                     Player player = Bukkit.getPlayer(uuid);
@@ -318,7 +325,6 @@ public class DeathRaceState implements GameState, Listener {
 
         mapClearBossBar.removePlayer(player);
 
-        player.setGameMode(GameMode.ADVENTURE);
         player.clearActivePotionEffects();
         player.getInventory().clear();
     }
@@ -343,9 +349,9 @@ public class DeathRaceState implements GameState, Listener {
             player.clearActivePotionEffects();
             player.getInventory().clear();
             player.getInventory().addItem(Misc.getMenu());
-            player.setGameMode(GameMode.ADVENTURE);
         }
 
+        HandlerList.unregisterAll(this);
         Spleef.inst().setState(new WaitingState());
     }
 }

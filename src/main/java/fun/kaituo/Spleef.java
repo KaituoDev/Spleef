@@ -16,6 +16,7 @@ import fun.kaituo.commands.SpleefClearMapCommand;
 import fun.kaituo.commands.SpleefDebugCommand;
 import fun.kaituo.gameutils.GameUtils;
 import fun.kaituo.gameutils.game.Game;
+import fun.kaituo.gameutils.util.Misc;
 import fun.kaituo.states.WaitingState;
 import io.papermc.paper.event.player.PlayerPickItemEvent;
 import net.kyori.adventure.text.Component;
@@ -144,9 +145,14 @@ public class Spleef extends Game implements Listener {
             if (player == null) {
                 continue;
             }
+
+            player.clearActivePotionEffects();
+            player.getInventory().clear();
+            player.setGameMode(GameMode.ADVENTURE);
             GameUtils.inst().join(player, GameUtils.inst().getLobby());
         }
-        super.forceStop();
+
+        instance.state.exit();
         Bukkit.getScheduler().cancelTasks(this);
         super.onDisable();
     }
@@ -278,6 +284,7 @@ public class Spleef extends Game implements Listener {
                 if (!player.getGameMode().equals(GameMode.CREATIVE)) {
                     if (!instance.playerIds.contains(player.getUniqueId())) {
                         if (instance.getState() != null) {
+                            GameUtils.inst().join(player, instance);
                             instance.getState().addPlayer(player);
                         }
                     }
@@ -285,7 +292,12 @@ public class Spleef extends Game implements Listener {
                 else {
                     if (instance.playerIds.contains(player.getUniqueId())) {
                         if (instance.getState() != null) {
-                            instance.getState().removePlayer(player);
+                            instance.playerIds.remove(player.getUniqueId());
+                            instance.playerSurvivalStage.remove(player.getUniqueId());
+                            --instance.survivingPlayerNumber;
+
+                            player.clearActivePotionEffects();
+                            player.getInventory().clear();
                         }
                     }
                 }

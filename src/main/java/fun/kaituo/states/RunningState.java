@@ -23,11 +23,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.BoundingBox;
-import org.enginehub.linbus.stream.token.LinToken;
 
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 public class RunningState implements GameState, Listener {
@@ -37,18 +34,13 @@ public class RunningState implements GameState, Listener {
     private final ItemStack feather = new ItemStackBuilder(Material.FEATHER).setDisplayName("§e§l飞升").setLore("§b受任于坠落之际，奉命于危难之间").build();
     private final ItemStack kb_stick = new ItemStackBuilder(Material.DEBUG_STICK).setDisplayName("§c§l击退棒").setLore("§eReady to lift off!").addEnchantment(Enchantment.KNOCKBACK, 1).build();
 
-    private static final int STATE_DURATION = 2400;
-
-    private int stateCountdown = STATE_DURATION;
+    private int STATE_DURATION;
+    private int stateCountdown;
     private boolean gameMode = true;
 
     private HashMap<UUID, Integer> particleSpawnerIDs = new HashMap<>();
 
-    private BossBar countdownBossBar = Bukkit.createBossBar(
-            "§6死亡竞赛开始于: §f" + stateCountdown/20 + " §6秒后",
-            BarColor.YELLOW,
-            BarStyle.SOLID
-    );
+    private BossBar countdownBossBar;
 
     @EventHandler
     public void onPlayerTryBreakBlock(PlayerInteractEvent pie) {
@@ -86,6 +78,10 @@ public class RunningState implements GameState, Listener {
             return;
         }
         if (!player.getInventory().getItemInMainHand().isSimilar(feather)) {
+            return;
+        }
+        if (particleSpawnerIDs.containsKey(player.getUniqueId())) {
+            player.sendMessage("§c每次只能使用一个\"飞升\"！");
             return;
         }
 
@@ -190,6 +186,17 @@ public class RunningState implements GameState, Listener {
         Spleef.inst().currentGameState = "RunningState";
 
         gameMode = Spleef.inst().isNormalMode(); // true=普通模式 false=无限火力
+        if (gameMode) {
+            STATE_DURATION = stateCountdown = 2400;
+        }
+        else {
+            STATE_DURATION = stateCountdown = 1200;
+        }
+        countdownBossBar = Bukkit.createBossBar(
+                "§6死亡竞赛开始于: §f" + stateCountdown/20 + " §6秒后",
+                BarColor.YELLOW,
+                BarStyle.SOLID
+        );
         for (UUID uuid : Spleef.inst().playerIds) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) {
