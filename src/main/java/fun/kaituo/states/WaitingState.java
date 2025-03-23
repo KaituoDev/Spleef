@@ -2,6 +2,7 @@ package fun.kaituo.states;
 
 import fun.kaituo.Spleef;
 import fun.kaituo.gameutils.game.GameState;
+import fun.kaituo.gameutils.util.Misc;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -67,6 +68,8 @@ public class WaitingState implements GameState, Listener {
                 ++Spleef.inst().survivingPlayerNumber;
             }
         }
+
+        Spleef.inst().clearMap();
     }
 
     @Override
@@ -107,6 +110,7 @@ public class WaitingState implements GameState, Listener {
         player.setRespawnLocation(Spleef.getLobbySpawnPoint());
         player.clearActivePotionEffects();
         player.getInventory().clear();
+        player.getInventory().addItem(Misc.getMenu());
         player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, PotionEffect.INFINITE_DURATION, 4));
 
         for (net.kyori.adventure.bossbar.BossBar bar : player.activeBossBars()) {
@@ -122,6 +126,7 @@ public class WaitingState implements GameState, Listener {
 
         player.clearActivePotionEffects();
         player.getInventory().clear();
+        player.setGameMode(GameMode.ADVENTURE);
     }
 
     @Override

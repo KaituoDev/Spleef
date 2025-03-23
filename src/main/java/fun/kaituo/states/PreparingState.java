@@ -2,6 +2,7 @@ package fun.kaituo.states;
 
 import fun.kaituo.Spleef;
 import fun.kaituo.gameutils.game.GameState;
+import fun.kaituo.gameutils.util.Misc;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
@@ -137,6 +138,7 @@ public class PreparingState implements GameState, Listener {
 
         player.clearActivePotionEffects();
         player.getInventory().clear();
+        player.setGameMode(GameMode.ADVENTURE);
     }
 
     @Override
@@ -149,12 +151,14 @@ public class PreparingState implements GameState, Listener {
 
             player.clearActivePotionEffects();
             player.getInventory().clear();
+            player.getInventory().addItem(Misc.getMenu());
+            player.setGameMode(GameMode.ADVENTURE);
         }
 
         if (Bukkit.getScheduler().isCurrentlyRunning(Spleef.inst().mapEditTaskID) || Bukkit.getScheduler().isQueued(Spleef.inst().mapEditTaskID)) {
             Bukkit.getScheduler().cancelTask(Spleef.inst().mapEditTaskID);
         }
-        Spleef.inst().clearMap();
+
         Spleef.inst().setState(new WaitingState());
     }
 

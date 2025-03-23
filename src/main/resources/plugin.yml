@@ -4,10 +4,12 @@ version: 3.0.2
 author: YFshadaow & APairOfMoons
 depend: [GameUtils,WorldEdit,ProtocolLib]
 
+api-version: 1.13
+
 commands:
   spleefdebug:
     description: Debug command for Spleef game
-    usage: /spleefdebug show <players|playernum|survival>
+    usage: /spleefdebug show <players | playernum  | survival | gamestate>
 
   spleefclearmap:
     description: Map clearing command for Spleef game
